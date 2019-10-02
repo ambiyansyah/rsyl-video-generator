@@ -1,0 +1,21 @@
+{
+  "name": "rsyl-images-scraper",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "Risyal Ambiyansyah",
+  "license": "ISC",
+  "dependencies": {
+    "fs-extra": "^8.1.0",
+    "image-downloader": "^3.5.0",
+    "images-scraper": "^3.0.1",
+    "sharp": "^0.23.1",
+    "user-agents": "^1.0.396",
+    "videoshow": "^0.1.11",
+    "yargs": "^14.0.0"
+  }
+}
