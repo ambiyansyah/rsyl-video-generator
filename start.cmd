@@ -1,1 +1,1 @@
-node index.js --keyword="home design" --limit=100
+node index.js --type="image" --keyword="design home" --limit=10

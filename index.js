@@ -1,70 +1,69 @@
 "use strict";
 
-const Scraper   = require('./lib/google-images-scraper');
-const argv      = require('yargs').argv;
-const UserAgent = require('user-agents');
-const download  = require('image-downloader');
-const fse       = require('fs-extra');
-const videoshow = require('videoshow');
-const sharp     = require('sharp');
-
-let userAgent = new UserAgent();
-let keyword   = argv.keyword.replace(/[^a-zA-Z ]/g, '').trim().replace(/\s\s+/g, ' ').toLowerCase();
-let google    = new Scraper.Google({
-    keyword  : keyword,
-    userAgent: userAgent.toString(),
-    limit    : argv.limit,
-    puppeteer: {
-        headless: true
-    },
-    advanced: {
-        imgType   : 'photo',   // options: clipart, face, lineart, news, photo
-        resolution: 'l',       // options: l(arge), m(edium), i(cons), etc.
-        color     : undefined  // options: color, gray, trans
-    }
-});
-
-const downloadImages = async (results) => {
-    let dir            = `./images/${keyword.replace(/\s+/g, '-')}`;
-    let downloadedFile = [];
-    fse.ensureDirSync(dir)
-
-    for (let result of results) {
-        if (result.type) {
-            let imgTitle    = result.title.replace(/[^a-zA-Z ]/g, '').trim().replace(/\s\s+/g, ' ');
-            let imgAlt      = imgTitle.replace(/\s+/g, '-').toLowerCase();
-            let imgFilename = imgAlt + '.' + result.type;
-
-            const options = {
-                url    : result.url,
-                dest   : `${dir}/${imgFilename}`,
-                headers: {
-                    'User-Agent': userAgent.toString()
-                },
-                timeout: 1500
-            }
-
-            try {
-                console.log(`download ${result.url}`);
-                const { filename, image } = await download.image(options)
-                const semiTransparentRedPng = await sharp(filename)
-                    .resize(640)
-                    .toBuffer();
-                
-                downloadedFile.push(semiTransparentRedPng)
-            } catch (error) {
-                console.log(error)
-            }
-        }
-    }
-
-    return downloadedFile;
-}
+const Scraper    = require('./lib/google-images-scraper');
+const Downloader = require('./handler/imageHandler');
+const argv       = require('yargs').argv;
+const UserAgent  = require('user-agents');
 
 (async () => {
-    const results  = await google.start(); // search image links
-    const download = await downloadImages(results);  // start to download images
-    console.log(download);
+    switch (argv.type) {
+        case 'image':
+            const keyword    = argv.keyword.replace(/[^a-zA-Z ]/g, '').trim().replace(/\s\s+/g, ' ').toLowerCase();
+            const keywordTag = keyword.replace(/\s+/g, '-');
+            const userAgent  = new UserAgent();
+            const google     = new Scraper.Google({
+                keyword  : keyword,
+                userAgent: userAgent.toString(),
+                limit    : argv.limit,
+                puppeteer: {
+                    headless: true
+                },
+                advanced: {
+                    imgType   : 'photo',   // options: clipart, face, lineart, news, photo
+                    resolution: 'l',       // options: l(arge), m(edium), i(cons), etc.
+                    color     : undefined  // options: color, gray, trans
+                }
+            });
 
-    // console.log('results', download.length);
+            const results  = await google.start();
+            const download = await Downloader.download({keyword, keywordTag, results, userAgent});
+            console.log(download);
+            
+            break;
+        case 'video':
+            console.log('coming soon');
+
+            var videoOptions = {
+                fps: 25,
+                loop: 5, // seconds
+                transition: true,
+                transitionDuration: 1, // seconds
+                videoBitrate: 1024,
+                videoCodec: 'libx264',
+                size: '1280x720',
+                audioBitrate: '128k',
+                audioChannels: 2,
+                format: 'mp4',
+                pixelFormat: 'yuv420p'
+            }
+
+            videoshow(this.images, videoOptions)
+                .save(`./videos/${this.tag}.mp4`)
+                .on('start', function (command) {
+                    console.log('ffmpeg process started:', command)
+                })
+                .on('error', function (err, stdout, stderr) {
+                    console.error('Error:', err)
+                    console.error('ffmpeg stderr:', stderr)
+                })
+                .on('end', function (output) {
+                    console.error('Video created in:', output)
+                })
+
+            break;
+        default:
+            console.log('please fill type');
+            
+            break;
+    }
 })();
